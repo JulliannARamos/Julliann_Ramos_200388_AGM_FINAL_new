@@ -82,7 +82,7 @@ public class Passarinho extends ApplicationAdapter {
 		inicializarTexturas();
 		inicializaObjetos();
 	}
-	//verificando métodos
+	//roda a lógica do jogo
 	@Override
 	public void render () {
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT| GL20.GL_DEPTH_BUFFER_BIT);
@@ -92,7 +92,7 @@ public class Passarinho extends ApplicationAdapter {
 		desenharTexturas();
 		detectarColisoes();
 	}
-	//método para inicializar as texturas
+	//método para pegar as referências dos assents
 	private void inicializarTexturas()
 	{
 		//inicilizando os valores das texturas
@@ -110,11 +110,12 @@ public class Passarinho extends ApplicationAdapter {
 		moedaAtual = moedaPrata;
 		logo = new Texture("logo.png");
 	}
-	//método para inicializar objeto
+	//método para inicializar os valores das variáveis
 	private void inicializaObjetos()
 	{
-		//
+		//batch desenha as sprites
 		batch = new SpriteBatch();
+		//random é uma classe de randomização
 		random = new Random();
 		//define a largura e posição do dispositivo, passaro, e cano, além do espaço do cano.
 		larguraDispositivo = VIRTUAL_WIDTH;
@@ -145,20 +146,23 @@ public class Passarinho extends ApplicationAdapter {
 		somColisao = Gdx.audio.newSound(Gdx.files.internal("som_batida.wav"));
 		somPontuacao = Gdx.audio.newSound(Gdx.files.internal("som_pontos.wav"));
 		coinSound= Gdx.audio.newSound(Gdx.files.internal("coinsound.mp3"));
-		//
+		//salva no dispositivo
 		preferencias = Gdx.app.getPreferences("flappyBird");
 		pontuacaoMaxima = preferencias.getInteger("pontuacaoMaxima",0);
-		//
+		//Inicializa a camera, define o tamanho e largura
 		camera = new OrthographicCamera();
 		camera.position.set(VIRTUAL_WIDTH/2, VIRTUAL_HEIGHT/2,0);
+		//orientação do celular
 		viewport = new StretchViewport(VIRTUAL_WIDTH, VIRTUAL_HEIGHT, camera);
-		//
+		//define a posição das moedas.
 		posicaoMoedaY = alturaDispositivo/2;
 		posicaoMoedaX = larguraDispositivo/2;
 	}
+	//define o comportamento do jogo com base no estado atual.
 	private void verificarEstadoJogo(){
-
+		//detecta o toque
 		boolean toqueTela = Gdx.input.justTouched();
+		//Antes de começar a jogabilidade		
 		if (estadoJogo == 0) {
 			if (toqueTela) {
 				gravidade = -15;
@@ -166,37 +170,43 @@ public class Passarinho extends ApplicationAdapter {
 				somVoando.play();
 			}
 		}
+		//roda a lógica da gameplay
 		else if (estadoJogo==1)
 		{
 			if (toqueTela){
 				gravidade = -15;
 				somVoando.play();
 			}
-
+			
+			//movimenta os canos e a moeda da direita para a esquerda
 			posicaoCanoHorizontal -= Gdx.graphics.getDeltaTime()*200;
 			posicaoMoedaX-=Gdx.graphics.getDeltaTime()*200;
-
-
+			
+			//reseta a posição do cano quando sai da tela
 			if (posicaoCanoHorizontal < -canoTopo.getWidth())
 			{
 				posicaoCanoHorizontal = larguraDispositivo;
 				posicaoCanoVertical  =random.nextInt(400) - 200;
 				passouCano = false;
 			}
-
+			
+			//reseta a posição da moeda quando sai da tela
 			if (posicaoMoedaX < -moedaAtual.getWidth() * escalaMoeda / 2)
 			{
 				resetaMoeda();
 			}
-
+			
+			//Deixa de aplicar a gravidade ao clicar na tela ou se o jogador estiver em contato com a tela
 			if (posicaoInicialVerticalPassaro> 0 || toqueTela)
 			{
 				posicaoInicialVerticalPassaro = posicaoInicialVerticalPassaro - gravidade;
 			}
 			gravidade++;
 		}
+		//roda a lógica do estado de game over
 		else if (estadoJogo == 2)
 		{
+			//se tiver mais pontos que a pontuação maxima atual, ele atualiza e salva na memória do dispostivo
 			if (pontos > pontuacaoMaxima)
 			{
 				pontuacaoMaxima = pontos;
@@ -204,6 +214,7 @@ public class Passarinho extends ApplicationAdapter {
 				preferencias.flush();
 			}
 			posicaoHorizontalPassaro -= Gdx.graphics.getDeltaTime()*500;
+			//se houver toque na tela, reseta para o estado inicial do jogo
 
 			if (toqueTela)
 			{
@@ -217,16 +228,18 @@ public class Passarinho extends ApplicationAdapter {
 			}
 		}
 	}
-
+	
+	//método para resetar a posição da moeda
 	private void resetaMoeda()
 	{
 		posicaoMoedaX = posicaoCanoHorizontal + larguraDispositivo/2;
 		posicaoMoedaY= alturaDispositivo/2;
+		//Muda p tipo da moeda que irá aparecer aleatoriamente
 
 		if(random.nextInt(99) <= 29) moedaAtual = moedaOuro;
 				else moedaAtual = moedaPrata;
 	}
-
+	//posiciona os colisores dos objetos e detecta as colisões
 	private void  detectarColisoes()
 	{
 		circuloPassaro.set(
@@ -234,29 +247,34 @@ public class Passarinho extends ApplicationAdapter {
 				posicaoInicialVerticalPassaro + passaros[0].getHeight()/2/2,
 				passaros[0].getWidth()/2/2
 		);
+		//gerando colisor
 		retanguloCanoBaixo.set(
 				posicaoCanoHorizontal,
 				alturaDispositivo/2 - canoBaixo.getHeight() - espacoEntreCanos/2 + posicaoCanoVertical,
 				canoBaixo.getWidth(), canoBaixo.getHeight()
 		);
+		//gerando colisor
 
 		retanguloCanoCima.set(
 				posicaoCanoHorizontal, alturaDispositivo/2 + espacoEntreCanos/ 2 + posicaoCanoVertical,
 				canoTopo.getWidth(), canoTopo.getHeight()
 		);
-
+		//gerando colisor
 		circuloMoeda.set(posicaoMoedaX, posicaoMoedaY, moedaAtual.getWidth()*escalaMoeda/2);
-
+		
+		//detecta as colisões 
 		boolean colidiuCanoCima = Intersector.overlaps(circuloPassaro, retanguloCanoCima);
 		boolean colidiuCanoBaixo = Intersector.overlaps(circuloPassaro, retanguloCanoBaixo);
 		boolean colidiuMoeda = Intersector.overlaps(circuloPassaro, circuloMoeda);
-
+		
+		//define o que acontece quando colide com o cano
 		if (colidiuCanoCima|| colidiuCanoBaixo){
 			if (estadoJogo == 1){
 				somColisao.play();
 				estadoJogo=2;
 			}
 		}
+		//Define o que acontece com a moeda após colidir
 		if (colidiuMoeda == true)
 		{
 			if(moedaAtual == moedaOuro) pontos += 10;
@@ -266,10 +284,13 @@ public class Passarinho extends ApplicationAdapter {
 			coinSound.play();
 		}
 	}
+	//método para desenhar as texturas
 	private void desenharTexturas()
 	{
 		batch.setProjectionMatrix(camera.combined);
+		//posicionamento da camera
 		batch.begin();
+		//começa o desenho
 
 		batch.draw(fundo,0,0,larguraDispositivo,alturaDispositivo);
 		batch.draw(passaros[ (int) variacao], 50 + posicaoHorizontalPassaro,posicaoInicialVerticalPassaro,passaros[ (int) variacao].getWidth()/2, passaros[ (int) variacao].getHeight()/2);
@@ -278,17 +299,17 @@ public class Passarinho extends ApplicationAdapter {
 		batch.draw(canoTopo, posicaoCanoHorizontal,
 				alturaDispositivo/2+espacoEntreCanos/2+posicaoCanoVertical);
 		textoPontuacao.draw(batch,String.valueOf(pontos), larguraDispositivo/2, alturaDispositivo-110);
-
-		//desenhar moedas
+		
+		
 		batch.draw(moedaAtual,posicaoMoedaX-moedaAtual.getWidth()*escalaMoeda/2, posicaoMoedaY-moedaAtual.getHeight()*escalaMoeda/2, moedaAtual.getWidth()*escalaMoeda,moedaAtual.getHeight()*escalaMoeda);
+		//desenha as texturas
 
-		//desenha a textura
+		
 		if (estadoJogo == 0)
 		{
 			batch.draw(logo, larguraDispositivo / 2 - logo.getWidth() / 2, alturaDispositivo / 2);
 		}
-
-
+		//desenha a logo enquanto espera o jogo começar
 
 		if (estadoJogo ==2 )
 		{
@@ -296,12 +317,14 @@ public class Passarinho extends ApplicationAdapter {
 			textoReiniciar.draw(batch, "Toque para reiniciar", larguraDispositivo/2 - 140, alturaDispositivo/2 - gameOver.getHeight()/2);
 			textoMelhorPontuacao.draw(batch, "Seu record é: " + pontuacaoMaxima + " pontos", larguraDispositivo/2 -140, alturaDispositivo/2 - gameOver.getHeight());
 		}
+		//durante o estado de perda, desenha na tela o gameOver, toque para reiniciar, record e pontos
 
 		batch.end();
 	}
-
+	//método para validação de pontos
 	public void validarPontos()
 	{
+		//Quando o cano sai da tela, vai contar a pontuação.
 		if (posicaoCanoHorizontal < posicaoHorizontalPassaro){
 			if (!passouCano) {
 
@@ -311,14 +334,17 @@ public class Passarinho extends ApplicationAdapter {
 			}
 		}
 		variacao+= Gdx.graphics.getDeltaTime() * 10;
+		//variável usada para fazer a animação do pássaro
 
 		if (variacao>3)
 			variacao = 0;
 	}
+	//ele vai redimensionar a viewport com base na resolução do dispositivo.
 	@Override
 	public void resize(int width, int height){
 		viewport.update(width, height);
 	}
+	//roda quando o aplicativo é fechado
 	@Override
 	public void dispose () {
 
